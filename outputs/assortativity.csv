@@ -1,0 +1,9 @@
+cnt_location,type,Q
+Home,Physical,0.18039552148730392
+Work,Physical,0.08918556652677526
+School,Physical,0.23455924591536698
+Other,Physical,0.14384847402158085
+Home,Conversational,0.07916585720009767
+Work,Conversational,0.0666531972740731
+School,Conversational,0.18253154281594675
+Other,Conversational,0.10899351164029802
