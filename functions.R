@@ -206,11 +206,9 @@ eth_age_sex <- eth_age_sex %>% select('Age',contains('_')) %>% mutate('p_age_gro
   mutate(proportion = value/sum(value)) %>% complete(p_adult_child, p_age_group, p_ethnicity, p_gender,
                                                      fill = list(value = 0, proportion = 0))
 
-weight_participants <- function(part = part,
-                                age_structure = NULL,
-                                age_structure_gendered = NULL,
-                                ethnicity_structure = NULL,
-                                age_structure_adult_child = NULL,
+## function to weight participants
+
+weight_participants <- function(part,
                                 eth_age_sex_structure = eth_age_sex,
                                 weighting = NULL,
                                 group_vars = NULL,
@@ -267,6 +265,16 @@ weight_participants <- function(part = part,
       summarise(sum_in = sum(proportion, na.rm = T)) %>%
       ungroup()
     
+    true_props <- a_g_e_df %>%
+      group_by(!!!syms(group_vars)) %>%
+      summarise(true_prop = sum(proportion, na.rm = T)) %>%
+      ungroup()
+    
+    not_in_prop_groups <- not_in_prop_groups %>% 
+      left_join(true_props, by = group_vars) %>% 
+      mutate(proportion_of_group = sum_in/true_prop) %>% 
+      select(!c(sum_in, true_prop))
+    
     for (i in 1:nrow(part_age)) {
       if (is.na(part_age$proportion[i]) & "p_gender" %in% age_gender_vec) {
         if ((is.na(part_age$p_gender[i]) | part_age$p_gender[i] == "other")) {
@@ -314,13 +322,13 @@ weight_participants <- function(part = part,
     if (length(group_vars) > 0) {
       part_age <- part_age %>%
         left_join(not_in_prop_groups, by = group_vars) %>%
-        mutate(proportion = proportion / sum_in) %>%
-        select(!sum_in)
+        mutate(proportion = proportion / proportion_of_group) %>%
+        select(!proportion_of_group)
     } else {
       part_age <- part_age %>%
-        mutate(sum_in = not_in_prop_groups$sum_in[1]) %>%
-        mutate(proportion = proportion / sum_in) %>%
-        select(!sum_in)
+        mutate(proportion_of_group = not_in_prop_groups$proportion_of_group[1]) %>%
+        mutate(proportion = proportion / proportion_of_group) %>%
+        select(!proportion_of_group)
     }
   } else {
     part_age <- part_age %>% mutate(proportion = NA)
@@ -333,7 +341,6 @@ weight_participants <- function(part = part,
       T ~ proportion / sample_prop
     )
   )
-  
   
   weighted_data <- part %>%
     select(p_id, !!!(group_vars), !!!syms(weighting))
@@ -377,6 +384,7 @@ weight_participants <- function(part = part,
   
   weighted_data
 }
+
 
 ## function for neg bin mean contacts by XYZ variables
 
